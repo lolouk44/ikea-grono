@@ -58,8 +58,11 @@ const int mqtt_port = 1883;
 #define trigPin 5 //D1
 #define echoPin 0 //D3
 bool handheld = false;
-
-
+bool LastLightState = false;
+byte Lastred = 255;
+byte Lastgreen = 255;
+byte Lastblue = 255;
+byte Lastbrightness = 255;
 
 /**************************** FOR OTA **************************************************/
 #define SENSORNAME "grono_Lamp_Wemos" //change this to whatever you want to call your device
@@ -538,16 +541,36 @@ void loop() {
         stateOn = false;
       }
       else {
-    
-        realRed = map(red, 0, 255, 0, brightness);
-        realGreen = map(green, 0, 255, 0, brightness);
-        realBlue = map(blue, 0, 255, 0, brightness);
-        stateOn = true;
+        if (LastLightState) {
+          //Save last colour and brightness and set light to white 100% brightness
+          Lastbrightness = brightness;
+          Lastred = map(red, 0, 255, 0, Lastbrightness);;
+          Lastgreen = map(green, 0, 255, 0, Lastbrightness);;
+          Lastblue = map(blue, 0, 255, 0, Lastbrightness);;
+          realRed = 255;
+          realGreen = 255;
+          realBlue = 255;
+          stateOn = true;
+          LastLightState = false;
+        }
+        else
+        {
+          //Set light to saved colour and brightness
+          realRed = Lastred;
+          realGreen = Lastgreen;
+          realBlue = Lastblue;
+          stateOn = true;
+          LastLightState = true;
+       }
       }
     
       Serial.println(effect);
     
-      startFade = true;
+      setColor(realRed, realGreen, realBlue);
+      redVal = realRed;
+      grnVal = realGreen;
+      bluVal = realBlue;
+      startFade = false;
       inFade = false; // Kill the current fade
     
       sendState();
@@ -555,7 +578,6 @@ void loop() {
   }
   else {
     handheld = false;
-    //digitalWrite(led,LOW);
   }
   if (distance >= 200 || distance <= 0){
     Serial.println("Out of range");
@@ -1176,6 +1198,3 @@ void temp2rgb(unsigned int kelvin) {
         }
     }
 }
-
-
-
